@@ -41,8 +41,7 @@ function injectNav(pageTitle) {
   wrapper.innerHTML = navHTML;
   document.body.insertBefore(wrapper, document.body.firstChild);
 
-  // Fix overlay display
+  // Overlay stays hidden until sidebar opens on mobile
   const overlay = document.getElementById('sidebar-overlay');
-  if (overlay) overlay.style.display = 'block';
-  overlay.classList.remove('open');
+  if (overlay) overlay.style.display = 'none';
 }

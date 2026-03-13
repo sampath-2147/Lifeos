@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script src="nav.js"></script>
+<script>injectNav('Journal');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">📓 Journal</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="openWrite()">+ New Entry</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="grid-1-2">
+      <!-- Sidebar: list -->
+      <div>
+        <div class="card" style="padding:16px;margin-bottom:0">
+          <div style="margin-bottom:12px">
+            <input type="text" class="form-input" placeholder="🔍 Search entries..." id="journal-search" oninput="filterJournals()">
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('')">All</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('😄')">😄</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('😊')">😊</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('😐')">😐</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('😔')">😔</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterByMood('😤')">😤</button>
+          </div>
+          <div id="journal-list" style="max-height:calc(100vh - 250px);overflow-y:auto">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Main: write / read -->
+      <div id="journal-main">
+        <div class="card" id="write-panel" style="display:none">
+          <div class="card-header">
+            <div class="modal-title" id="write-panel-title">New Entry</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeWrite()">✕ Close</button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Title (optional)</label>
+            <input type="text" class="form-input" id="j-title" placeholder="Give this entry a title...">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-input" id="j-date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="j-category">
+                <option value="Personal">Personal</option>
+                <option value="Fitness">Fitness</option>
+                <option value="Gratitude">Gratitude</option>
+                <option value="Reflection">Reflection</option>
+                <option value="Goals">Goals</option>
+                <option value="Rant">Rant</option>
+                <option value="Win">Win 🎉</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mood</label>
+            <div class="mood-selector" id="j-mood-sel">
+              ${['😄 Great','😊 Good','😐 Okay','😔 Low','😤 Frustrated','😰 Anxious','💪 Motivated','😴 Tired'].map(m => `<button class="mood-btn" onclick="selectMood('${m}')">${m}</button>`).join('')}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Entry</label>
+            <textarea class="form-textarea" id="j-body" placeholder="What's on your mind? How was your day? What did you learn? What are you grateful for?..." style="min-height:300px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma-separated)</label>
+            <input type="text" class="form-input" id="j-tags" placeholder="e.g. workout, progress, goals">
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <button class="btn btn-danger" id="delete-entry-btn" style="display:none" onclick="deleteCurrentEntry()">🗑 Delete</button>
+            <div style="display:flex;gap:10px;margin-left:auto">
+              <button class="btn btn-ghost" onclick="closeWrite()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="read-panel">
+          <div id="read-content">
+            <div class="empty-state">
+              <div class="empty-icon">📓</div>
+              <h3>Your Journal</h3>
+              <p>Write freely. Nobody reads this but you.</p>
+              <button class="btn btn-primary" style="margin-top:16px" onclick="openWrite()">Start Writing</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+let currentMood = '';
+let currentEditId = null;
+let moodFilter = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('j-date').value = APP.today();
+  renderJournalList();
+});
+
+function renderJournalList(filter = '', mood = '') {
+  let entries = APP.get('journals', []);
+  if (filter) entries = entries.filter(j => (j.title + j.body + (j.tags || '')).toLowerCase().includes(filter.toLowerCase()));
+  if (mood) entries = entries.filter(j => j.mood && j.mood.startsWith(mood));
+
+  const el = document.getElementById('journal-list');
+  if (!entries.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:30px 12px"><div class="empty-icon">📓</div><h3>No entries yet</h3><p>Start writing today</p></div>`;
+    return;
+  }
+  el.innerHTML = entries.map(j => {
+    const catColors = { Personal: 'cyan', Fitness: 'green', Gratitude: 'orange', Reflection: 'purple', Goals: 'pink', Rant: 'red', Win: 'green' };
+    return `<div class="journal-entry" onclick="readEntry('${j.id}')">
+      <div class="entry-date">${APP.daysAgo(j.date)} ${j.mood ? '· ' + j.mood.split(' ')[0] : ''}</div>
+      <div class="entry-title">${j.title || 'Untitled Entry'}</div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+        <span class="tag tag-${catColors[j.category] || 'cyan'}" style="font-size:10px">${j.category || 'Personal'}</span>
+        ${(j.tags || '').split(',').filter(t => t.trim()).map(t => `<span class="tag" style="font-size:10px;background:var(--surface3);color:var(--text3)">#${t.trim()}</span>`).join('')}
+      </div>
+      <div class="entry-preview" style="margin-top:6px">${j.body || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function readEntry(id) {
+  const j = APP.get('journals', []).find(e => e.id === id);
+  if (!j) return;
+  document.getElementById('write-panel').style.display = 'none';
+  document.getElementById('read-panel').style.display = 'block';
+  const catColors = { Personal: 'cyan', Fitness: 'green', Gratitude: 'orange', Reflection: 'purple', Goals: 'pink', Rant: 'red', Win: 'green' };
+  document.getElementById('read-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:8px">${APP.formatDate(j.date, 'long')} ${j.mood ? '· ' + j.mood : ''}</div>
+        <h2 style="font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--text)">${j.title || 'Untitled Entry'}</h2>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span class="tag tag-${catColors[j.category] || 'cyan'}">${j.category || 'Personal'}</span>
+          ${(j.tags || '').split(',').filter(t => t.trim()).map(t => `<span class="tag" style="background:var(--surface3);color:var(--text3)">#${t.trim()}</span>`).join('')}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="editEntry('${j.id}')">✏️ Edit</button>
+    </div>
+    <hr class="divider">
+    <div style="font-size:15px;color:var(--text2);line-height:1.9;white-space:pre-wrap">${j.body || ''}</div>`;
+}
+
+function openWrite(editId = null) {
+  currentEditId = editId;
+  currentMood = '';
+  document.getElementById('write-panel').style.display = 'block';
+  document.getElementById('read-panel').style.display = 'none';
+  document.getElementById('write-panel-title').textContent = editId ? 'Edit Entry' : 'New Entry';
+  document.getElementById('delete-entry-btn').style.display = editId ? 'inline-flex' : 'none';
+
+  if (!editId) {
+    document.getElementById('j-title').value = '';
+    document.getElementById('j-date').value = APP.today();
+    document.getElementById('j-category').value = 'Personal';
+    document.getElementById('j-body').value = '';
+    document.getElementById('j-tags').value = '';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  }
+}
+
+function closeWrite() {
+  currentEditId = null;
+  document.getElementById('write-panel').style.display = 'none';
+  document.getElementById('read-panel').style.display = 'block';
+}
+
+function editEntry(id) {
+  const j = APP.get('journals', []).find(e => e.id === id);
+  if (!j) return;
+  openWrite(id);
+  document.getElementById('j-title').value = j.title || '';
+  document.getElementById('j-date').value = j.date;
+  document.getElementById('j-category').value = j.category || 'Personal';
+  document.getElementById('j-body').value = j.body || '';
+  document.getElementById('j-tags').value = j.tags || '';
+  currentMood = j.mood || '';
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === j.mood);
+  });
+}
+
+function selectMood(mood) {
+  currentMood = mood;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('selected', b.textContent === mood));
+}
+
+function saveEntry() {
+  const body = document.getElementById('j-body').value.trim();
+  if (!body) { APP.toast('Entry cannot be empty', 'error'); return; }
+  const entry = {
+    id: currentEditId || undefined,
+    date: document.getElementById('j-date').value || APP.today(),
+    title: document.getElementById('j-title').value.trim(),
+    category: document.getElementById('j-category').value,
+    mood: currentMood,
+    body,
+    tags: document.getElementById('j-tags').value,
+  };
+  if (currentEditId) {
+    APP.update('journals', currentEditId, entry);
+    APP.toast('Entry updated!');
+    closeWrite();
+    readEntry(currentEditId);
+  } else {
+    const saved = APP.push('journals', entry);
+    APP.toast('Entry saved! ✍️');
+    closeWrite();
+    readEntry(saved.id);
+  }
+  renderJournalList();
+}
+
+function deleteCurrentEntry() {
+  if (!currentEditId || !confirmDelete('Delete this journal entry? This cannot be undone.')) return;
+  APP.remove('journals', currentEditId);
+  APP.toast('Entry deleted');
+  closeWrite();
+  document.getElementById('read-content').innerHTML = `<div class="empty-state"><div class="empty-icon">📓</div><h3>Entry deleted</h3></div>`;
+  renderJournalList();
+}
+
+function filterJournals() {
+  renderJournalList(document.getElementById('journal-search').value, moodFilter);
+}
+
+function filterByMood(mood) {
+  moodFilter = mood;
+  renderJournalList(document.getElementById('journal-search').value, mood);
+}
+</script>
+</body>
+</html>

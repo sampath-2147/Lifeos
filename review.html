@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Review — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script src="nav.js"></script>
+<script>injectNav('Daily Review');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">✅ Daily Review</div>
+    <div class="topbar-actions">
+      <span class="tag tag-green" id="review-streak-tag">🔥 0 day streak</span>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="grid-2-1">
+      <!-- Review Form -->
+      <div>
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🌅</span> Today's Review</div>
+            <input type="date" class="form-input" id="review-date" style="width:160px;height:34px;padding:6px 12px;font-size:13px">
+          </div>
+
+          <!-- Scores -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+            <div class="form-group">
+              <label class="form-label">Overall Day (1-10)</label>
+              <input type="range" id="r-overall" min="1" max="10" value="7" oninput="updateSlider('r-overall','overall-val')">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text3)">Bad</span><span id="overall-val" style="font-family:var(--font-display);font-size:18px;color:var(--accent);font-weight:700">7</span><span style="font-size:12px;color:var(--text3)">Amazing</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Energy Level (1-10)</label>
+              <input type="range" id="r-energy" min="1" max="10" value="6" oninput="updateSlider('r-energy','energy-val')">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text3)">Exhausted</span><span id="energy-val" style="font-family:var(--font-display);font-size:18px;color:var(--cyan);font-weight:700">6</span><span style="font-size:12px;color:var(--text3)">Full energy</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sleep Quality (1-10)</label>
+              <input type="range" id="r-sleep" min="1" max="10" value="5" oninput="updateSlider('r-sleep','sleep-val')">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text3)">Terrible</span><span id="sleep-val" style="font-family:var(--font-display);font-size:18px;color:var(--purple);font-weight:700">5</span><span style="font-size:12px;color:var(--text3)">Perfect</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Diet Quality (1-10)</label>
+              <input type="range" id="r-diet" min="1" max="10" value="6" oninput="updateSlider('r-diet','diet-val')">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text3)">Off-track</span><span id="diet-val" style="font-family:var(--font-display);font-size:18px;color:var(--orange);font-weight:700">6</span><span style="font-size:12px;color:var(--text3)">On point</span></div>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Checkboxes -->
+          <div style="margin-bottom:20px">
+            <div class="section-title" style="margin-bottom:12px">Daily Habits</div>
+            <div id="review-habits-list"></div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Questions -->
+          <div class="form-group">
+            <label class="form-label">💪 What did you do for your health today?</label>
+            <textarea class="form-textarea" id="r-health" placeholder="Workout, water intake, meals, steps..." style="min-height:80px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🏆 What was today's biggest win?</label>
+            <textarea class="form-textarea" id="r-win" placeholder="Big or small — every win counts" style="min-height:80px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔧 What could you improve tomorrow?</label>
+            <textarea class="form-textarea" id="r-improve" placeholder="Be honest with yourself" style="min-height:80px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🙏 3 Things I'm grateful for today</label>
+            <textarea class="form-textarea" id="r-grateful" placeholder="1. ...&#10;2. ...&#10;3. ..." style="min-height:90px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🎯 Tomorrow's top 3 priorities</label>
+            <textarea class="form-textarea" id="r-tomorrow" placeholder="1. ...&#10;2. ...&#10;3. ..." style="min-height:90px"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">💭 Free thoughts / anything else</label>
+            <textarea class="form-textarea" id="r-thoughts" placeholder="Stream of consciousness..." style="min-height:80px"></textarea>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="saveReview()">Save Review ✓</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar: history + trends -->
+      <div>
+        <!-- Trend Chart -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📈</span> Review Trends</div>
+          </div>
+          <canvas id="trendChart" height="200"></canvas>
+        </div>
+
+        <!-- Past Reviews -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📋</span> Past Reviews</div>
+          </div>
+          <div id="review-history" style="max-height:500px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- VIEW REVIEW MODAL -->
+<div class="modal-overlay" id="view-review-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title" id="vr-title">Daily Review</div>
+      <button class="modal-close" onclick="APP.closeModal('view-review-modal')">✕</button>
+    </div>
+    <div id="vr-content"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const HABITS = [
+  { key: 'workout', label: '🏋️ Completed workout / cardio', points: 2 },
+  { key: 'water', label: '💧 Drank 3.5L+ water', points: 1 },
+  { key: 'protein', label: '🥚 Ate protein with every meal', points: 1 },
+  { key: 'nojunk', label: '🚫 No junk food / biscuits', points: 2 },
+  { key: 'sleep', label: '😴 Slept before midnight', points: 1 },
+  { key: 'skiprope', label: '🪢 Did skipping / cardio', points: 1 },
+  { key: 'nosoda', label: '🧃 No soda / packaged juice', points: 1 },
+  { key: 'walked', label: '🚶 Walked 20+ minutes', points: 1 },
+];
+
+let checkedHabits = {};
+let trendChart;
+
+document.addEventListener('DOMContentLoaded', () => {
+  setChartDefaults();
+  document.getElementById('review-date').value = APP.today();
+  renderHabitsList();
+  renderReviewHistory();
+  renderTrendChart();
+  const streak = APP.getStreak();
+  document.getElementById('review-streak-tag').textContent = `🔥 ${streak} day streak`;
+});
+
+function renderHabitsList() {
+  const el = document.getElementById('review-habits-list');
+  el.innerHTML = HABITS.map(h => `
+    <div class="habit-item" onclick="toggleReviewHabit('${h.key}')">
+      <div class="habit-check" id="rhc-${h.key}">${checkedHabits[h.key] ? '✓' : ''}</div>
+      <div class="habit-label" id="rhl-${h.key}">${h.label}</div>
+      <span class="tag tag-green" style="font-size:10px">+${h.points}pt</span>
+    </div>`).join('');
+  Object.keys(checkedHabits).forEach(k => {
+    if (checkedHabits[k]) {
+      document.getElementById('rhc-' + k)?.classList.add('checked');
+      document.getElementById('rhl-' + k)?.classList.add('checked');
+    }
+  });
+}
+
+function toggleReviewHabit(key) {
+  checkedHabits[key] = !checkedHabits[key];
+  renderHabitsList();
+}
+
+function updateSlider(id, valId) {
+  document.getElementById(valId).textContent = document.getElementById(id).value;
+}
+
+function saveReview() {
+  const date = document.getElementById('review-date').value || APP.today();
+  const habitScore = HABITS.filter(h => checkedHabits[h.key]).reduce((s, h) => s + h.points, 0);
+  const maxScore = HABITS.reduce((s, h) => s + h.points, 0);
+
+  const review = {
+    date,
+    scores: {
+      overall: document.getElementById('r-overall').value,
+      energy: document.getElementById('r-energy').value,
+      sleep: document.getElementById('r-sleep').value,
+      diet: document.getElementById('r-diet').value,
+    },
+    habits: { ...checkedHabits },
+    habitScore, maxScore,
+    health: document.getElementById('r-health').value,
+    win: document.getElementById('r-win').value,
+    improve: document.getElementById('r-improve').value,
+    grateful: document.getElementById('r-grateful').value,
+    tomorrow: document.getElementById('r-tomorrow').value,
+    thoughts: document.getElementById('r-thoughts').value,
+  };
+
+  // Remove existing review for this date
+  const existing = APP.get('reviews', []);
+  const filtered = existing.filter(r => r.date !== date);
+  filtered.unshift({ ...review, id: Date.now().toString() });
+  APP.set('reviews', filtered);
+
+  APP.toast('Review saved! Great work today 🎯');
+  renderReviewHistory();
+  renderTrendChart();
+  const streak = APP.getStreak();
+  document.getElementById('review-streak-tag').textContent = `🔥 ${streak} day streak`;
+}
+
+function renderReviewHistory() {
+  const reviews = APP.get('reviews', []);
+  const el = document.getElementById('review-history');
+  if (!reviews.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:28px 12px"><div class="empty-icon">✅</div><h3>No reviews yet</h3><p>Complete your first review today</p></div>`;
+    return;
+  }
+  el.innerHTML = reviews.map(r => {
+    const score = parseInt(r.scores?.overall || 5);
+    const color = score >= 8 ? 'green' : score >= 6 ? 'cyan' : score >= 4 ? 'orange' : 'red';
+    const habit = r.habitScore !== undefined ? `${r.habitScore}/${r.maxScore}pt` : '';
+    return `<div class="journal-entry" onclick="viewReview('${r.id}')">
+      <div class="entry-date">${APP.daysAgo(r.date)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="entry-title">${APP.formatDate(r.date)}</div>
+        <div style="display:flex;gap:6px">
+          <span class="tag tag-${color}">${score}/10</span>
+          ${habit ? `<span class="tag tag-orange">${habit}</span>` : ''}
+        </div>
+      </div>
+      <div class="entry-preview">${r.win || r.thoughts || '–'}</div>
+    </div>`;
+  }).join('');
+}
+
+function viewReview(id) {
+  const r = APP.get('reviews', []).find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('vr-title').textContent = `Review — ${APP.formatDate(r.date)}`;
+  const score = r.scores || {};
+  const checkedHabitsDisplay = HABITS.filter(h => r.habits?.[h.key]).map(h => h.label).join(', ');
+  document.getElementById('vr-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      ${[['Overall', score.overall, 'accent'], ['Energy', score.energy, 'cyan'], ['Sleep', score.sleep, 'purple'], ['Diet', score.diet, 'orange']].map(([l, v, c]) => `
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${l}</div>
+          <div style="font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--${c})">${v || '–'}</div>
+        </div>`).join('')}
+    </div>
+    ${checkedHabitsDisplay ? `<div class="form-group"><div class="form-label">Habits Done</div><div style="font-size:14px;color:var(--text2)">${checkedHabitsDisplay}</div></div>` : ''}
+    ${[['💪 Health', r.health], ['🏆 Win', r.win], ['🔧 Improve', r.improve], ['🙏 Grateful', r.grateful], ['🎯 Tomorrow', r.tomorrow], ['💭 Thoughts', r.thoughts]].filter(([, v]) => v).map(([label, val]) => `
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${label}</div>
+        <div style="font-size:14px;color:var(--text2);white-space:pre-wrap;line-height:1.7">${val}</div>
+      </div>`).join('')}
+    <hr class="divider">
+    <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')">🗑 Delete Review</button>`;
+  APP.openModal('view-review-modal');
+}
+
+function deleteReview(id) {
+  if (!confirmDelete()) return;
+  APP.remove('reviews', id);
+  APP.closeModal('view-review-modal');
+  APP.toast('Review deleted');
+  renderReviewHistory();
+  renderTrendChart();
+}
+
+function renderTrendChart() {
+  const reviews = [...APP.get('reviews', [])].reverse().slice(-14);
+  const ctx = document.getElementById('trendChart');
+  if (trendChart) trendChart.destroy();
+  if (!reviews.length) return;
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: reviews.map(r => APP.formatDate(r.date, 'short')),
+      datasets: [
+        { label: 'Overall', data: reviews.map(r => r.scores?.overall), borderColor: '#a3e635', tension: 0.4, pointRadius: 3, fill: false },
+        { label: 'Energy', data: reviews.map(r => r.scores?.energy), borderColor: '#22d3ee', tension: 0.4, pointRadius: 3, fill: false },
+        { label: 'Sleep', data: reviews.map(r => r.scores?.sleep), borderColor: '#a78bfa', tension: 0.4, pointRadius: 3, fill: false },
+        { label: 'Diet', data: reviews.map(r => r.scores?.diet), borderColor: '#fb923c', tension: 0.4, pointRadius: 3, fill: false },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#71717a', boxWidth: 10, padding: 8, font: { size: 11 } } } },
+      scales: {
+        y: { min: 0, max: 10, grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', stepSize: 2 } },
+        x: { grid: { display: false }, ticks: { color: '#71717a', maxTicksLimit: 7, font: { size: 10 } } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

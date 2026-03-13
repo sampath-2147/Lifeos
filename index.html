@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR injected by nav.js -->
+<script src="nav.js"></script>
+<script>injectNav('Dashboard');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Dashboard</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary btn-sm" onclick="window.location.href='review.html'">+ Daily Review</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Hero -->
+    <div class="page-hero" id="hero-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="page-hero-title" id="hero-greeting">Good morning 👋</div>
+          <div class="page-hero-sub" id="hero-sub">Start your day strong. Every habit counts.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div class="streak-ring"><div class="streak-num" id="hero-streak">0</div><div class="streak-label">Streak</div></div>
+          <div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Days since start</div>
+            <div class="number-highlight" id="days-since">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid-4 mb-8" id="stat-grid">
+      <div class="stat-card green">
+        <div class="stat-label">Current Weight</div>
+        <div class="stat-value" id="stat-weight">--<span class="stat-unit"> kg</span></div>
+        <div class="stat-change neutral" id="stat-weight-change">No data yet</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label">Workouts This Week</div>
+        <div class="stat-value" id="stat-workouts">0<span class="stat-unit"> / 6</span></div>
+        <div class="stat-change neutral" id="stat-workouts-sub">This week</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">Journal Entries</div>
+        <div class="stat-value" id="stat-journals">0</div>
+        <div class="stat-change neutral">Total entries</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">Learning Hours</div>
+        <div class="stat-value" id="stat-learning">0<span class="stat-unit"> hrs</span></div>
+        <div class="stat-change neutral">Total logged</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid-2 mb-8">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📉</span> Weight Progress</div>
+          <span class="tag tag-green" id="weight-goal-tag">Goal: -- kg</span>
+        </div>
+        <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🏃</span> Workout Frequency</div>
+          <span class="tag tag-cyan">Last 4 weeks</span>
+        </div>
+        <div class="chart-wrap"><canvas id="workoutChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Middle Row: Habits + Quick Log -->
+    <div class="grid-2-1 mb-8">
+      <!-- Today's Habits -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">✅</span> Today's Habits</div>
+          <span class="muted small" id="habit-score">0 / 0</span>
+        </div>
+        <div id="habits-list"></div>
+        <button class="btn btn-ghost btn-sm mt-6" onclick="resetHabits()" style="margin-top:12px">Reset for Today</button>
+      </div>
+
+      <!-- Quick Log -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">⚡</span> Quick Log</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-ghost w-full" onclick="window.location.href='workout.html'">🏋️ Log Workout</button>
+          <button class="btn btn-ghost w-full" onclick="window.location.href='fitness.html'">⚖️ Log Weight</button>
+          <button class="btn btn-ghost w-full" onclick="window.location.href='journal.html'">📓 Write Journal</button>
+          <button class="btn btn-ghost w-full" onclick="window.location.href='learning.html'">📚 Log Learning</button>
+          <button class="btn btn-ghost w-full" onclick="window.location.href='nutrition.html'">🥗 Log Meal</button>
+          <hr class="divider" style="margin:4px 0">
+          <button class="btn btn-primary w-full" onclick="window.location.href='review.html'">✅ Daily Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Recent Activity + Progress -->
+    <div class="grid-2">
+      <!-- Recent Journal -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📓</span> Recent Journal</div>
+          <a href="journal.html" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div id="recent-journals">
+          <div class="empty-state">
+            <div class="empty-icon">📓</div>
+            <h3>No entries yet</h3>
+            <p>Start writing your first journal entry</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body Progress -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📐</span> Body Measurements</div>
+          <a href="fitness.html" class="btn btn-ghost btn-sm">Update</a>
+        </div>
+        <div id="measurements-display">
+          <div class="empty-state">
+            <div class="empty-icon">📐</div>
+            <h3>Not logged yet</h3>
+            <p>Go to Body Stats to add your measurements</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="card mt-6">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🗓</span> Activity Heatmap <span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">Last 90 days</span></div>
+      </div>
+      <div class="heat-grid" id="heatmap"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        <span style="font-size:12px;color:var(--text3)">Less</span>
+        <div class="heat-cell"></div>
+        <div class="heat-cell l1"></div>
+        <div class="heat-cell l2"></div>
+        <div class="heat-cell l3"></div>
+        <div class="heat-cell l4"></div>
+        <span style="font-size:12px;color:var(--text3)">More</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  setChartDefaults();
+  renderDashboard();
+});
+
+function renderDashboard() {
+  const profile = APP.getProfile();
+  const streak = APP.getStreak();
+
+  // Greeting
+  const hr = new Date().getHours();
+  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('hero-greeting').textContent = `${greeting}, ${profile.name} 👋`;
+
+  // Days since start
+  const daysSince = Math.floor((Date.now() - new Date(profile.startDate)) / 86400000);
+  document.getElementById('days-since').textContent = daysSince;
+  document.getElementById('hero-streak').textContent = streak;
+
+  // Weight
+  const weights = APP.get('weights', []);
+  const latestW = weights[0];
+  const prevW = weights[1];
+  if (latestW) {
+    document.getElementById('stat-weight').innerHTML = `${latestW.weight}<span class="stat-unit"> kg</span>`;
+    if (prevW) {
+      const diff = (latestW.weight - prevW.weight).toFixed(1);
+      const sign = diff > 0 ? '+' : '';
+      const cls = diff > 0 ? 'negative' : 'positive';
+      document.getElementById('stat-weight-change').className = `stat-change ${cls}`;
+      document.getElementById('stat-weight-change').textContent = `${sign}${diff} kg from last log`;
+    }
+  }
+  document.getElementById('weight-goal-tag').textContent = `Goal: ${profile.targetWeight} kg`;
+
+  // Workouts this week
+  const workouts = APP.get('workouts', []);
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekWorkouts = workouts.filter(w => new Date(w.date) >= weekStart).length;
+  document.getElementById('stat-workouts').innerHTML = `${weekWorkouts}<span class="stat-unit"> / 6</span>`;
+
+  // Journals
+  const journals = APP.get('journals', []);
+  document.getElementById('stat-journals').textContent = journals.length;
+
+  // Learning
+  const learnings = APP.get('learning', []);
+  const totalHrs = learnings.reduce((s, l) => s + (parseFloat(l.hours) || 0), 0);
+  document.getElementById('stat-learning').innerHTML = `${totalHrs.toFixed(1)}<span class="stat-unit"> hrs</span>`;
+
+  // Weight chart
+  renderWeightChart(weights, profile);
+
+  // Workout chart
+  renderWorkoutChart(workouts);
+
+  // Habits
+  renderHabits();
+
+  // Recent journals
+  renderRecentJournals(journals);
+
+  // Measurements
+  renderMeasurements();
+
+  // Heatmap
+  renderHeatmap();
+}
+
+function renderWeightChart(weights, profile) {
+  const ctx = document.getElementById('weightChart').getContext('2d');
+  const sorted = [...weights].reverse().slice(-12);
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sorted.map(w => APP.formatDate(w.date, 'short')),
+      datasets: [{
+        label: 'Weight (kg)',
+        data: sorted.map(w => w.weight),
+        borderColor: '#a3e635',
+        backgroundColor: 'rgba(163,230,53,0.08)',
+        tension: 0.4, fill: true, pointRadius: 4,
+        pointBackgroundColor: '#a3e635',
+      }, {
+        label: 'Target',
+        data: sorted.map(() => profile.targetWeight),
+        borderColor: 'rgba(34,211,238,0.5)',
+        borderDash: [5,5], pointRadius: 0, fill: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a' } },
+        x: { grid: { display: false }, ticks: { color: '#71717a', maxTicksLimit: 6 } }
+      }
+    }
+  });
+}
+
+function renderWorkoutChart(workouts) {
+  const ctx = document.getElementById('workoutChart').getContext('2d');
+  const weeks = ['4w ago', '3w ago', '2w ago', 'This week'];
+  const counts = weeks.map((_, i) => {
+    const start = new Date(); start.setDate(start.getDate() - (3 - i) * 7 - start.getDay());
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    return workouts.filter(w => { const d = new Date(w.date); return d >= start && d < end; }).length;
+  });
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: weeks,
+      datasets: [{ label: 'Workouts', data: counts, backgroundColor: 'rgba(34,211,238,0.7)', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', stepSize: 1 }, max: 7 },
+        x: { grid: { display: false }, ticks: { color: '#71717a' } }
+      }
+    }
+  });
+}
+
+function renderHabits() {
+  const defaultHabits = [
+    { name: 'Morning workout / walk', icon: '🏃' },
+    { name: 'Drink 3.5L water', icon: '💧' },
+    { name: 'Eat protein with every meal', icon: '🥚' },
+    { name: 'No junk food / biscuits', icon: '🚫' },
+    { name: 'Sleep before midnight', icon: '😴' },
+    { name: 'Skip rope / cardio', icon: '🪢' },
+  ];
+  const todayKey = 'habits_' + APP.today();
+  let checked = APP.get(todayKey, []);
+  const el = document.getElementById('habits-list');
+  el.innerHTML = defaultHabits.map((h, i) => {
+    const done = checked.includes(i);
+    return `<div class="habit-item">
+      <div class="habit-check ${done ? 'checked' : ''}" onclick="toggleHabit(${i})">${done ? '✓' : ''}</div>
+      <div class="habit-label ${done ? 'checked' : ''}">${h.icon} ${h.name}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('habit-score').textContent = `${checked.length} / ${defaultHabits.length}`;
+}
+
+function toggleHabit(idx) {
+  const todayKey = 'habits_' + APP.today();
+  let checked = APP.get(todayKey, []);
+  if (checked.includes(idx)) checked = checked.filter(i => i !== idx);
+  else checked.push(idx);
+  APP.set(todayKey, checked);
+  renderHabits();
+}
+
+function resetHabits() {
+  APP.set('habits_' + APP.today(), []);
+  renderHabits();
+}
+
+function renderRecentJournals(journals) {
+  const el = document.getElementById('recent-journals');
+  if (!journals.length) return;
+  el.innerHTML = journals.slice(0, 3).map(j => `
+    <div class="journal-entry" onclick="window.location.href='journal.html'">
+      <div class="entry-date">${APP.daysAgo(j.date)} · ${j.mood || ''}</div>
+      <div class="entry-title">${j.title || 'Untitled'}</div>
+      <div class="entry-preview">${j.body || ''}</div>
+    </div>`).join('');
+}
+
+function renderMeasurements() {
+  const measurements = APP.get('measurements', []);
+  const el = document.getElementById('measurements-display');
+  if (!measurements.length) return;
+  const latest = measurements[0];
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${[
+        ['Belly', latest.belly, 'inch', 'orange'],
+        ['Waist', latest.waist, 'inch', 'cyan'],
+        ['Chest', latest.chest, 'inch', 'pink'],
+        ['Weight', latest.weight, 'kg', 'green'],
+      ].map(([label, val, unit, color]) => val ? `
+        <div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">${label}</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--${color})">${val} <span style="font-size:12px;color:var(--text3)">${unit}</span></div>
+        </div>` : '').join('')}
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:14px">Last updated: ${APP.formatDate(latest.date)}</div>`;
+}
+
+function renderHeatmap() {
+  const el = document.getElementById('heatmap');
+  const workouts = APP.get('workouts', []);
+  const journals = APP.get('journals', []);
+  const reviews = APP.get('reviews', []);
+  const allDates = [...workouts.map(w => w.date), ...journals.map(j => j.date), ...reviews.map(r => r.date)];
+  const countMap = {};
+  allDates.forEach(d => { const k = d.split('T')[0]; countMap[k] = (countMap[k] || 0) + 1; });
+
+  let html = '';
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    const c = countMap[key] || 0;
+    const cls = c === 0 ? '' : c === 1 ? 'l1' : c === 2 ? 'l2' : c <= 3 ? 'l3' : 'l4';
+    html += `<div class="heat-cell ${cls}" title="${key}: ${c} activities"></div>`;
+  }
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>

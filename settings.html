@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script src="nav.js"></script>
+<script>injectNav('Settings');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">⚙️ Profile & Settings</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="grid-2">
+      <!-- Profile -->
+      <div>
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">👤</span> Your Profile</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" class="form-input" id="p-name" placeholder="e.g. Arjun">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Age</label>
+              <input type="number" class="form-input" id="p-age" placeholder="e.g. 21">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select class="form-select" id="p-gender">
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Height (cm)</label>
+              <input type="number" class="form-input" id="p-height" placeholder="172">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Start Weight (kg)</label>
+              <input type="number" class="form-input" id="p-start-weight" placeholder="85" step="0.1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Target Weight (kg)</label>
+              <input type="number" class="form-input" id="p-target-weight" placeholder="72" step="0.1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Journey Start Date</label>
+              <input type="date" class="form-input" id="p-start-date">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Primary Goal</label>
+            <select class="form-select" id="p-goal">
+              <option>Fat Loss</option><option>Muscle Gain</option><option>Body Recomposition</option>
+              <option>General Fitness</option><option>Marathon / Endurance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Daily Calorie Target</label>
+            <input type="number" class="form-input" id="p-cal-target" placeholder="1850">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Daily Protein Target (g)</label>
+            <input type="number" class="form-input" id="p-protein-target" placeholder="140">
+          </div>
+          <button class="btn btn-primary w-full" onclick="saveProfile()" style="margin-top:8px">💾 Save Profile</button>
+        </div>
+      </div>
+
+      <div>
+        <!-- Stats Summary -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📊</span> Your Journey Stats</div>
+          </div>
+          <div id="stats-display">Loading...</div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">💾</span> Data Management</div>
+          </div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Your data is stored locally in your browser. Export to back it up.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-ghost w-full" onclick="exportData()">📤 Export All Data (JSON)</button>
+            <button class="btn btn-ghost w-full" onclick="importData()">📥 Import Data</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+            <hr class="divider" style="margin:4px 0">
+            <button class="btn btn-danger w-full" onclick="clearAllData()">🗑 Clear All Data</button>
+          </div>
+        </div>
+
+        <!-- Calorie Guide -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🧮</span> Calorie Reference</div>
+          </div>
+          <div style="font-size:13px;color:var(--text2)">
+            <div style="margin-bottom:12px">Based on your profile, here are your estimated calorie needs:</div>
+            <div id="calorie-reference">Set your profile to see this.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="card mt-6" style="text-align:center;padding:32px">
+      <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--accent);margin-bottom:8px">LifeOS v1.0</div>
+      <div style="font-size:13px;color:var(--text3);max-width:500px;margin:0 auto">
+        Your personal operating system for health, fitness, and growth. All data stored locally — 100% private.
+        Built to be hosted on GitHub Pages. No accounts, no subscriptions, no data sent anywhere.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  loadProfile();
+  renderStats();
+});
+
+function loadProfile() {
+  const p = APP.getProfile();
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-age').value = p.age || '';
+  document.getElementById('p-height').value = p.height || 172;
+  document.getElementById('p-start-weight').value = p.startWeight || 85;
+  document.getElementById('p-target-weight').value = p.targetWeight || 72;
+  document.getElementById('p-start-date').value = p.startDate || APP.today();
+  document.getElementById('p-cal-target').value = p.calTarget || 1850;
+  document.getElementById('p-protein-target').value = p.proteinTarget || 140;
+  if (p.gender) document.getElementById('p-gender').value = p.gender;
+  if (p.goal) document.getElementById('p-goal').value = p.goal;
+  updateCalorieRef(p);
+}
+
+function saveProfile() {
+  const profile = {
+    name: document.getElementById('p-name').value || 'My Name',
+    age: document.getElementById('p-age').value,
+    gender: document.getElementById('p-gender').value,
+    height: parseFloat(document.getElementById('p-height').value) || 172,
+    startWeight: parseFloat(document.getElementById('p-start-weight').value) || 85,
+    targetWeight: parseFloat(document.getElementById('p-target-weight').value) || 72,
+    startDate: document.getElementById('p-start-date').value || APP.today(),
+    goal: document.getElementById('p-goal').value,
+    calTarget: parseInt(document.getElementById('p-cal-target').value) || 1850,
+    proteinTarget: parseInt(document.getElementById('p-protein-target').value) || 140,
+  };
+  APP.set('profile', profile);
+  APP.toast('Profile saved! ✓');
+  APP.renderSidebarUser();
+  updateCalorieRef(profile);
+}
+
+function updateCalorieRef(p) {
+  if (!p.startWeight || !p.height) return;
+  const w = p.startWeight, h = p.height, age = p.age || 22;
+  // Mifflin-St Jeor
+  const bmr = 10 * w + 6.25 * h - 5 * age + 5;
+  const maintenance = Math.round(bmr * 1.375); // lightly active
+  const fatLoss = Math.round(maintenance * 0.78);
+  const aggressiveCut = Math.round(maintenance * 0.70);
+  document.getElementById('calorie-reference').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Maintenance</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text)">${maintenance}</div>
+        <div style="font-size:11px;color:var(--text3)">kcal/day</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--accent);margin-bottom:4px">Fat Loss ✓</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--accent)">${fatLoss}</div>
+        <div style="font-size:11px;color:var(--text3)">Recommended</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Aggressive Cut</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--orange)">${aggressiveCut}</div>
+        <div style="font-size:11px;color:var(--text3)">Max deficit</div>
+      </div>
+    </div>`;
+}
+
+function renderStats() {
+  const workouts = APP.get('workouts', []);
+  const journals = APP.get('journals', []);
+  const reviews = APP.get('reviews', []);
+  const weights = APP.get('weights', []);
+  const learning = APP.get('learning', []);
+  const streak = APP.getStreak();
+
+  document.getElementById('stats-display').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${[
+        ['🔥 Streak', streak + ' days', 'accent'],
+        ['🏋️ Workouts', workouts.length, 'cyan'],
+        ['📓 Journals', journals.length, 'orange'],
+        ['✅ Reviews', reviews.length, 'green'],
+        ['📚 Learning hrs', learning.reduce((s,l)=>s+parseFloat(l.hours||0),0).toFixed(1), 'purple'],
+        ['⚖️ Weight logs', weights.length, 'pink'],
+      ].map(([l, v, c]) => `
+        <div style="background:var(--surface2);border-radius:8px;padding:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">${l}</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--${c})">${v}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function exportData() {
+  const data = {};
+  ['profile','weights','measurements','workouts','journals','reviews','learning','resources','meals'].forEach(k => {
+    data[k] = APP.get(k);
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `lifeos-backup-${APP.today()}.json`; a.click();
+  URL.revokeObjectURL(url);
+  APP.toast('Data exported!');
+}
+
+function importData() {
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!confirm('This will overwrite your current data. Continue?')) return;
+      Object.entries(data).forEach(([k, v]) => { if (v !== null) APP.set(k, v); });
+      APP.toast('Data imported!');
+      loadProfile();
+      renderStats();
+    } catch { APP.toast('Invalid file', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('⚠️ This will permanently delete ALL your data. Are you absolutely sure?\n\nConsider exporting first!')) return;
+  if (!confirm('Last chance — delete everything?')) return;
+  ['profile','weights','measurements','workouts','journals','reviews','learning','resources','meals'].forEach(k => {
+    localStorage.removeItem('lifeos_' + k);
+  });
+  APP.toast('All data cleared');
+  renderStats();
+}
+</script>
+</body>
+</html>

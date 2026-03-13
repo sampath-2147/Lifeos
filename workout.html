@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workouts — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="nav.js"></script>
+<script>injectNav('Workouts');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">🏋️ Workouts</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="APP.openModal('workout-modal')">+ Log Workout</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Stats -->
+    <div class="grid-4 mb-8">
+      <div class="stat-card green">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value" id="w-week">0<span class="stat-unit"> sessions</span></div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label">Total Workouts</div>
+        <div class="stat-value" id="w-total">0</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" id="w-month">0</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">Best Streak</div>
+        <div class="stat-value" id="w-streak">0<span class="stat-unit"> days</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2-1 mb-8">
+      <!-- Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📊</span> Workouts Per Week</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="wkChart"></canvas></div>
+      </div>
+
+      <!-- Muscle group breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💪</span> Focus Areas</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="focusChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Plan Guide -->
+    <div class="card mb-8">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🗓</span> Your Weekly Plan</div>
+        <span class="tag tag-green">Home + Dumbbell Plan</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px" id="weekly-plan">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Workout History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span> Workout History</div>
+        <input type="text" class="form-input" placeholder="Search..." style="width:180px;height:34px;padding:6px 12px;font-size:13px" id="search-input" oninput="filterWorkouts()">
+      </div>
+      <div id="workout-list">
+        <div class="empty-state">
+          <div class="empty-icon">🏋️</div>
+          <h3>No workouts yet</h3>
+          <p>Log your first workout to start tracking</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORKOUT MODAL -->
+<div class="modal-overlay" id="workout-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title">🏋️ Log Workout</div>
+      <button class="modal-close" onclick="APP.closeModal('workout-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="w-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Workout Type</label>
+        <select class="form-select" id="w-type">
+          <option value="Upper Body">Upper Body</option>
+          <option value="Lower Body">Lower Body</option>
+          <option value="Full Body">Full Body</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Core & Abs">Core & Abs</option>
+          <option value="Push (Chest/Triceps)">Push (Chest/Triceps)</option>
+          <option value="Pull (Back/Biceps)">Pull (Back/Biceps)</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Active Rest">Active Rest</option>
+          <option value="Skipping / HIIT">Skipping / HIIT</option>
+          <option value="Walk">Walk</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Duration (minutes)</label>
+        <input type="number" class="form-input" id="w-duration" placeholder="45">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Intensity</label>
+        <select class="form-select" id="w-intensity">
+          <option value="Light">Light</option>
+          <option value="Moderate" selected>Moderate</option>
+          <option value="High">High</option>
+          <option value="Max">Max / HIIT</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Exercises -->
+    <div class="form-group">
+      <label class="form-label">Exercises Performed</label>
+      <div id="exercise-rows"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addExerciseRow()" style="margin-top:8px">+ Add Exercise</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Calories Burned (est.)</label>
+        <input type="number" class="form-input" id="w-calories" placeholder="e.g. 250">
+      </div>
+      <div class="form-group">
+        <label class="form-label">How did it feel? (1-10)</label>
+        <input type="number" class="form-input" id="w-feel" placeholder="7" min="1" max="10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="w-notes" placeholder="How was the session? Any PRs? How did your body feel?" style="min-height:72px"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="APP.closeModal('workout-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWorkout()">Save Workout</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW WORKOUT MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="view-title">Workout</div>
+      <button class="modal-close" onclick="APP.closeModal('view-modal')">✕</button>
+    </div>
+    <div id="view-content"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const WEEKLY_PLAN = [
+  { day: 'MON', type: 'Push', desc: 'Chest, Triceps', exercises: 'Push-ups, DB Chest Press, Tricep Band Extension, DB Shoulder Press', color: 'green' },
+  { day: 'TUE', type: 'Cardio', desc: 'Skip rope + Core', exercises: '20 min skip intervals, Plank 3x60s, Leg Raises, Mountain Climbers', color: 'cyan' },
+  { day: 'WED', type: 'Pull', desc: 'Back, Biceps', exercises: 'DB Rows, Band Pull-Aparts, Bicep Curls, Band Face Pulls, Reverse Fly', color: 'orange' },
+  { day: 'THU', type: 'Rest', desc: 'Active Recovery', exercises: '30 min walk + stretching + foam roll', color: 'purple' },
+  { day: 'FRI', type: 'Full Body', desc: 'Compound + Core', exercises: 'DB Complex, Band Squats, Push-ups, Rows, Plank', color: 'pink' },
+  { day: 'SAT', type: 'HIIT', desc: 'High Intensity', exercises: 'Skipping 30s on/20s off x 15, Burpees, Jump Squats (no deep), Mountain Climbers', color: 'cyan' },
+  { day: 'SUN', type: 'Rest', desc: 'Recovery', exercises: 'Light 30–45 min walk, mobility stretches', color: 'purple' },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  setChartDefaults();
+  document.getElementById('w-date').value = APP.today();
+  addExerciseRow();
+  renderWeeklyPlan();
+  renderWorkoutPage();
+});
+
+function renderWeeklyPlan() {
+  const today = new Date().getDay(); // 0=Sun
+  const dayIdx = today === 0 ? 6 : today - 1;
+  document.getElementById('weekly-plan').innerHTML = WEEKLY_PLAN.map((p, i) => `
+    <div style="background:var(--surface2);border:1px solid ${i === dayIdx ? 'var(--accent)' : 'var(--border)'};border-radius:10px;padding:12px;text-align:center;${i === dayIdx ? 'box-shadow:var(--glow)' : ''}">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:4px">${p.day}</div>
+      <div class="tag tag-${p.color}" style="font-size:11px;margin-bottom:6px">${p.type}</div>
+      <div style="font-size:11px;color:var(--text3)">${p.desc}</div>
+      ${i === dayIdx ? '<div style="font-size:10px;color:var(--accent);margin-top:4px;font-weight:600">TODAY</div>' : ''}
+    </div>`).join('');
+}
+
+function renderWorkoutPage() {
+  const workouts = APP.get('workouts', []);
+
+  // Stats
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const weekCount = workouts.filter(w => new Date(w.date) >= weekStart).length;
+  const monthCount = workouts.filter(w => new Date(w.date) >= monthStart).length;
+  document.getElementById('w-week').innerHTML = `${weekCount}<span class="stat-unit"> sessions</span>`;
+  document.getElementById('w-total').textContent = workouts.length;
+  document.getElementById('w-month').textContent = monthCount;
+
+  // Streak
+  const dates = [...new Set(workouts.map(w => w.date.split('T')[0]))].sort().reverse();
+  let streak = 0, check = new Date();
+  for (const d of dates) {
+    const diff = Math.floor((check - new Date(d + 'T00:00:00')) / 86400000);
+    if (diff <= 1) { streak++; check = new Date(d + 'T00:00:00'); } else break;
+  }
+  document.getElementById('w-streak').innerHTML = `${streak}<span class="stat-unit"> days</span>`;
+
+  // Charts
+  renderWkChart(workouts);
+  renderFocusChart(workouts);
+
+  // List
+  renderWorkoutList(workouts);
+}
+
+function renderWkChart(workouts) {
+  const ctx = document.getElementById('wkChart').getContext('2d');
+  const weeks = []; const counts = [];
+  for (let i = 7; i >= 0; i--) {
+    const start = new Date(); start.setDate(start.getDate() - i * 7 - start.getDay());
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    weeks.push(`W${8 - i}`);
+    counts.push(workouts.filter(w => { const d = new Date(w.date); return d >= start && d < end; }).length);
+  }
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: weeks,
+      datasets: [{ data: counts, backgroundColor: weeks.map((_, i) => i === 7 ? '#a3e635' : 'rgba(163,230,53,0.3)'), borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a', stepSize: 1 }, max: 7 },
+        x: { grid: { display: false }, ticks: { color: '#71717a' } }
+      }
+    }
+  });
+}
+
+function renderFocusChart(workouts) {
+  const ctx = document.getElementById('focusChart').getContext('2d');
+  const types = {};
+  workouts.forEach(w => { types[w.type] = (types[w.type] || 0) + 1; });
+  const labels = Object.keys(types);
+  const data = Object.values(types);
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: ['#a3e635','#22d3ee','#fb923c','#f472b6','#a78bfa','#f87171','#fbbf24'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#71717a', boxWidth: 12, padding: 10 } } }
+    }
+  });
+}
+
+function renderWorkoutList(workouts, filter = '') {
+  const el = document.getElementById('workout-list');
+  const filtered = workouts.filter(w =>
+    !filter || w.type.toLowerCase().includes(filter) || (w.notes || '').toLowerCase().includes(filter)
+  );
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><h3>${filter ? 'No matches' : 'No workouts yet'}</h3><p>${filter ? 'Try a different search' : 'Log your first workout'}</p></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(w => `
+    <div class="workout-item">
+      <div>
+        <div class="workout-name">${w.type}</div>
+        <div class="workout-meta">${APP.formatDate(w.date)} · ${w.duration || '--'} min · ${w.intensity || ''}</div>
+        ${w.exercises?.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${w.exercises.map(e => `<span class="tag tag-green" style="font-size:11px">${e.name}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="workout-actions">
+        <button class="btn btn-ghost btn-sm" onclick="viewWorkout('${w.id}')">View</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteWorkout('${w.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function filterWorkouts() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderWorkoutList(APP.get('workouts', []), q);
+}
+
+function addExerciseRow() {
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.marginBottom = '8px';
+  row.innerHTML = `
+    <input type="text" class="form-input exercise-name" placeholder="Exercise name (e.g. DB Row)">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px">
+      <input type="number" class="form-input exercise-sets" placeholder="Sets" min="1">
+      <input type="text" class="form-input exercise-reps" placeholder="Reps/Time">
+      <input type="text" class="form-input exercise-weight" placeholder="Weight">
+      <button class="btn btn-ghost btn-sm" onclick="this.closest('.form-row').remove()" style="padding:8px 10px">✕</button>
+    </div>`;
+  document.getElementById('exercise-rows').appendChild(row);
+}
+
+function saveWorkout() {
+  const exercises = [];
+  document.querySelectorAll('#exercise-rows .form-row').forEach(row => {
+    const name = row.querySelector('.exercise-name')?.value;
+    if (name) exercises.push({
+      name,
+      sets: row.querySelector('.exercise-sets')?.value,
+      reps: row.querySelector('.exercise-reps')?.value,
+      weight: row.querySelector('.exercise-weight')?.value,
+    });
+  });
+
+  const entry = {
+    date: document.getElementById('w-date').value || APP.today(),
+    type: document.getElementById('w-type').value,
+    duration: document.getElementById('w-duration').value,
+    intensity: document.getElementById('w-intensity').value,
+    calories: document.getElementById('w-calories').value,
+    feel: document.getElementById('w-feel').value,
+    notes: document.getElementById('w-notes').value,
+    exercises,
+  };
+  APP.push('workouts', entry);
+  APP.closeModal('workout-modal');
+  APP.toast('Workout logged! 💪');
+  renderWorkoutPage();
+
+  // Reset
+  document.getElementById('w-date').value = APP.today();
+  document.getElementById('w-duration').value = '';
+  document.getElementById('w-calories').value = '';
+  document.getElementById('w-feel').value = '';
+  document.getElementById('w-notes').value = '';
+  document.getElementById('exercise-rows').innerHTML = '';
+  addExerciseRow();
+}
+
+function viewWorkout(id) {
+  const w = APP.get('workouts', []).find(x => x.id === id);
+  if (!w) return;
+  document.getElementById('view-title').textContent = w.type;
+  document.getElementById('view-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+      <div><div class="stat-label">Date</div><div style="font-weight:600;color:var(--text)">${APP.formatDate(w.date)}</div></div>
+      <div><div class="stat-label">Duration</div><div style="font-weight:600;color:var(--text)">${w.duration || '–'} min</div></div>
+      <div><div class="stat-label">Intensity</div><div style="font-weight:600;color:var(--text)">${w.intensity || '–'}</div></div>
+    </div>
+    ${w.exercises?.length ? `
+      <div style="margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:10px">Exercises</div>
+        ${w.exercises.map(e => `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:600;color:var(--text)">${e.name}</span>
+          <span style="color:var(--text3);font-size:13px">${e.sets || '?'} sets × ${e.reps || '?'} ${e.weight ? '@ ' + e.weight : ''}</span>
+        </div>`).join('')}
+      </div>` : ''}
+    ${w.notes ? `<div><div class="stat-label">Notes</div><div style="color:var(--text2);font-size:14px;margin-top:4px">${w.notes}</div></div>` : ''}
+    ${w.feel ? `<div style="margin-top:12px"><div class="stat-label">Felt</div><div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--accent)">${w.feel}/10</div></div>` : ''}`;
+  APP.openModal('view-modal');
+}
+
+function deleteWorkout(id) {
+  if (!confirmDelete()) return;
+  APP.remove('workouts', id);
+  APP.toast('Workout deleted');
+  renderWorkoutPage();
+}
+</script>
+</body>
+</html>

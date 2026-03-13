@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrition — LifeOS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="nav.js"></script>
+<script>injectNav('Nutrition');</script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">🥗 Nutrition</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="APP.openModal('meal-modal')">+ Log Meal</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Today's summary -->
+    <div class="page-hero" id="nutrition-hero">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="page-hero-title">Today's Nutrition</div>
+          <div class="page-hero-sub" id="today-date-label">Loading...</div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Calories</div>
+            <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent)" id="today-cals">0</div>
+            <div style="font-size:11px;color:var(--text3)">/ 1850 target</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Protein</div>
+            <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--cyan)" id="today-protein">0g</div>
+            <div style="font-size:11px;color:var(--text3)">/ 140g target</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Water</div>
+            <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--cyan)" id="today-water">0L</div>
+            <div style="font-size:11px;color:var(--text3)">/ 3.5L target</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--text3)">Calorie Progress</span>
+          <span id="cal-pct" style="font-size:12px;color:var(--accent)">0%</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="cal-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-8">
+      <!-- Today's meals -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🍽</span> Today's Meals</div>
+          <button class="btn btn-ghost btn-sm" onclick="APP.openModal('meal-modal')">+ Add</button>
+        </div>
+        <div id="today-meals">
+          <div class="empty-state"><div class="empty-icon">🍽</div><h3>Nothing logged yet</h3><p>Log your first meal of the day</p></div>
+        </div>
+      </div>
+
+      <!-- Macro breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📊</span> Macro Breakdown</div>
+        </div>
+        <div class="chart-wrap"><canvas id="macroChart"></canvas></div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px" id="macro-detail"></div>
+      </div>
+    </div>
+
+    <!-- Weekly calories chart -->
+    <div class="card mb-8">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📈</span> Weekly Calorie & Protein Trend</div>
+      </div>
+      <div class="chart-wrap"><canvas id="weekChart"></canvas></div>
+    </div>
+
+    <!-- Meal history -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span> Meal History</div>
+        <input type="date" id="history-date" class="form-input" style="width:160px;height:34px;padding:6px 12px;font-size:13px" onchange="renderMealHistory()">
+      </div>
+      <div id="meal-history"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MEAL MODAL -->
+<div class="modal-overlay" id="meal-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🍽 Log Meal</div>
+      <button class="modal-close" onclick="APP.closeModal('meal-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="m-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meal Type</label>
+        <select class="form-select" id="m-type">
+          <option>Breakfast</option><option>Lunch</option><option>Dinner</option>
+          <option>Morning Snack</option><option>Evening Snack</option><option>Post-Workout</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">What did you eat?</label>
+      <textarea class="form-textarea" id="m-food" placeholder="e.g. 3 boiled eggs + 2 rotis + dal (1 cup) + cucumber salad" style="min-height:80px"></textarea>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Calories (est.)</label>
+        <input type="number" class="form-input" id="m-cals" placeholder="e.g. 450">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Protein (g)</label>
+        <input type="number" class="form-input" id="m-protein" placeholder="e.g. 35">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Carbs (g)</label>
+        <input type="number" class="form-input" id="m-carbs" placeholder="e.g. 60">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fats (g)</label>
+        <input type="number" class="form-input" id="m-fats" placeholder="e.g. 12">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Water drunk today (L total)</label>
+        <input type="number" class="form-input" id="m-water" placeholder="e.g. 2.5" step="0.1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Was this meal on-plan?</label>
+      <div style="display:flex;gap:8px">
+        <button class="mood-btn" id="on-plan-yes" onclick="selectPlan(true)">✅ Yes, on track</button>
+        <button class="mood-btn" id="on-plan-no" onclick="selectPlan(false)">❌ Off plan</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-ghost" onclick="APP.closeModal('meal-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMeal()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+let mealOnPlan = true;
+
+document.addEventListener('DOMContentLoaded', () => {
+  setChartDefaults();
+  document.getElementById('m-date').value = APP.today();
+  document.getElementById('history-date').value = APP.today();
+  document.getElementById('today-date-label').textContent = APP.formatDate(APP.today(), 'long');
+  renderNutritionPage();
+});
+
+function selectPlan(val) {
+  mealOnPlan = val;
+  document.getElementById('on-plan-yes').classList.toggle('selected', val);
+  document.getElementById('on-plan-no').classList.toggle('selected', !val);
+}
+
+function renderNutritionPage() {
+  const meals = APP.get('meals', []);
+  const today = APP.today();
+  const todayMeals = meals.filter(m => m.date === today);
+
+  const totalCals = todayMeals.reduce((s, m) => s + (parseFloat(m.cals) || 0), 0);
+  const totalProtein = todayMeals.reduce((s, m) => s + (parseFloat(m.protein) || 0), 0);
+  const latestWater = todayMeals.filter(m => m.water).reduce((max, m) => Math.max(max, parseFloat(m.water) || 0), 0);
+
+  document.getElementById('today-cals').textContent = Math.round(totalCals);
+  document.getElementById('today-protein').textContent = Math.round(totalProtein) + 'g';
+  document.getElementById('today-water').textContent = latestWater.toFixed(1) + 'L';
+
+  const calPct = Math.min(100, Math.round((totalCals / 1850) * 100));
+  document.getElementById('cal-pct').textContent = calPct + '%';
+  document.getElementById('cal-bar').style.width = calPct + '%';
+  document.getElementById('cal-bar').style.background = calPct > 110 ? 'var(--red)' : calPct > 90 ? 'var(--orange)' : 'var(--accent)';
+
+  renderTodayMeals(todayMeals);
+  renderMacroChart(todayMeals);
+  renderWeekChart(meals);
+  renderMealHistory();
+}
+
+function renderTodayMeals(meals) {
+  const el = document.getElementById('today-meals');
+  if (!meals.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">🍽</div><h3>Nothing logged yet</h3></div>`; return; }
+  const mealIcons = { Breakfast: '🌅', Lunch: '☀️', Dinner: '🌙', 'Morning Snack': '🫐', 'Evening Snack': '🍌', 'Post-Workout': '💪', Other: '🍽' };
+  el.innerHTML = meals.map(m => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span>${mealIcons[m.type] || '🍽'}</span>
+          <span style="font-weight:600;color:var(--text);font-size:14px">${m.type}</span>
+          ${m.onPlan ? '<span class="tag tag-green" style="font-size:10px">On Plan ✓</span>' : '<span class="tag tag-red" style="font-size:10px">Off Plan</span>'}
+        </div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${m.food || ''}</div>
+        <div style="display:flex;gap:12px;font-size:12px;color:var(--text3)">
+          ${m.cals ? `<span>🔥 ${m.cals} kcal</span>` : ''}
+          ${m.protein ? `<span>💪 ${m.protein}g protein</span>` : ''}
+          ${m.carbs ? `<span>🌾 ${m.carbs}g carbs</span>` : ''}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="deleteMeal('${m.id}')">🗑</button>
+    </div>`).join('');
+}
+
+function renderMacroChart(meals) {
+  const protein = meals.reduce((s, m) => s + (parseFloat(m.protein) || 0), 0);
+  const carbs = meals.reduce((s, m) => s + (parseFloat(m.carbs) || 0), 0);
+  const fats = meals.reduce((s, m) => s + (parseFloat(m.fats) || 0), 0);
+  const ctx = document.getElementById('macroChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Protein', 'Carbs', 'Fats'],
+      datasets: [{ data: [protein || 1, carbs || 1, fats || 1], backgroundColor: ['#22d3ee', '#a3e635', '#fb923c'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#71717a', boxWidth: 10, padding: 10 } } }
+    }
+  });
+
+  const targets = { Protein: [protein, 140, 'cyan'], Carbs: [carbs, 200, 'green'], Fats: [fats, 60, 'orange'] };
+  document.getElementById('macro-detail').innerHTML = Object.entries(targets).map(([name, [val, target, color]]) => `
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--text3)">${name}</span>
+        <span style="font-size:12px;color:var(--${color})">${Math.round(val)}g / ${target}g</span>
+      </div>
+      <div class="progress-bar-wrap" style="height:5px"><div class="progress-bar-fill ${color}" style="width:${Math.min(100, Math.round(val/target*100))}%"></div></div>
+    </div>`).join('');
+}
+
+function renderWeekChart(meals) {
+  const ctx = document.getElementById('weekChart').getContext('2d');
+  const days = []; const cals = []; const proteins = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    const dayMeals = meals.filter(m => m.date === key);
+    days.push(APP.formatDate(key, 'short'));
+    cals.push(dayMeals.reduce((s, m) => s + (parseFloat(m.cals) || 0), 0));
+    proteins.push(dayMeals.reduce((s, m) => s + (parseFloat(m.protein) || 0), 0));
+  }
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Calories', data: cals, backgroundColor: 'rgba(163,230,53,0.5)', borderColor: '#a3e635', borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+        { label: 'Protein (g)', data: proteins, backgroundColor: 'rgba(34,211,238,0.5)', borderColor: '#22d3ee', borderWidth: 1, borderRadius: 4, type: 'line', yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#71717a', boxWidth: 12 } } },
+      scales: {
+        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#71717a' }, title: { display: true, text: 'Calories', color: '#71717a' } },
+        y1: { position: 'right', grid: { display: false }, ticks: { color: '#22d3ee' }, title: { display: true, text: 'Protein (g)', color: '#22d3ee' } },
+        x: { grid: { display: false }, ticks: { color: '#71717a' } }
+      }
+    }
+  });
+}
+
+function renderMealHistory() {
+  const date = document.getElementById('history-date').value;
+  const meals = APP.get('meals', []).filter(m => m.date === date);
+  const el = document.getElementById('meal-history');
+  if (!meals.length) { el.innerHTML = `<div class="empty-state" style="padding:32px"><div class="empty-icon">🍽</div><h3>No meals logged for ${APP.formatDate(date)}</h3></div>`; return; }
+  el.innerHTML = `<div style="padding:12px 0">` + meals.map(m => `
+    <div style="display:flex;justify-content:space-between;padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:8px">
+      <div>
+        <div style="font-weight:600;color:var(--text);margin-bottom:4px">${m.type} — ${m.food?.slice(0, 80) || ''}${m.food?.length > 80 ? '...' : ''}</div>
+        <div style="font-size:12px;color:var(--text3)">Cal: ${m.cals || '?'} · Protein: ${m.protein || '?'}g · Carbs: ${m.carbs || '?'}g · Fats: ${m.fats || '?'}g</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="deleteMeal('${m.id}')">🗑</button>
+    </div>`).join('') + '</div>';
+}
+
+function saveMeal() {
+  const food = document.getElementById('m-food').value.trim();
+  if (!food) { APP.toast('Enter what you ate', 'error'); return; }
+  APP.push('meals', {
+    date: document.getElementById('m-date').value || APP.today(),
+    type: document.getElementById('m-type').value,
+    food,
+    cals: document.getElementById('m-cals').value,
+    protein: document.getElementById('m-protein').value,
+    carbs: document.getElementById('m-carbs').value,
+    fats: document.getElementById('m-fats').value,
+    water: document.getElementById('m-water').value,
+    onPlan: mealOnPlan,
+  });
+  APP.closeModal('meal-modal');
+  APP.toast('Meal logged! 🥗');
+  renderNutritionPage();
+  ['m-cals','m-protein','m-carbs','m-fats','m-water','m-food'].forEach(id => document.getElementById(id).value = '');
+}
+
+function deleteMeal(id) {
+  if (!confirmDelete()) return;
+  APP.remove('meals', id);
+  APP.toast('Meal deleted');
+  renderNutritionPage();
+}
+</script>
+</body>
+</html>

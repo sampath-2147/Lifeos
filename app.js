@@ -129,14 +129,14 @@ const APP = {
     const overlay = document.getElementById('sidebar-overlay');
     if (toggle && sidebar) {
       toggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        if (overlay) overlay.classList.toggle('open');
+        const isOpen = sidebar.classList.toggle('open');
+        if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
       });
     }
     if (overlay) {
       overlay.addEventListener('click', () => {
         sidebar.classList.remove('open');
-        overlay.classList.remove('open');
+        overlay.style.display = 'none';
       });
     }
   },
